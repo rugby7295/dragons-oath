@@ -2,7 +2,9 @@
 const R=n=>Math.floor(Math.random()*n),pick=a=>a[R(a.length)];
 const shuf=a=>{a=[...a];for(let i=a.length-1;i>0;i--){const j=R(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
 const S={db:{}};
-const STEPS=14,CH=['霧深き森','凍てつく山脈','竜の谷'],chOf=s=>s<5?0:s<10?1:2;
+const STEPS=24,CH=['霧深き森','凍てつく山脈','灼熱の砂漠','呪われた沼地','竜の谷'],chOf=s=>Math.min(4,s/5|0);
+const CHT=['霧が立ち込める古い森。獣と亡者の気配がする…','吹雪が吹き荒れる白い山脈。凍てつく風が肌を刺す。','陽炎の揺れる灼熱の砂漠。砂の下には古の王墓が眠る。','毒の霧が漂う呪われた沼地。足を取られれば二度と戻れない。','竜の谷。空は赤黒く染まり、賢き邪竜の咆哮が響く…'];
+const GN=['森の主 ウルサリオン','氷牙の魔狼王 ヴァルガ','砂漠の王 サンドロス','沼の九頭竜 ヒュドラ','賢き邪竜 ヴァルドラクス'];
 const CARDS={},CLS=[],K=['k0','k1','k2','k3'];
 const mk=(id,a,co,d,b,h,fx,cl)=>({id,n:a,c:+co,d:+d,b:+b,h:+h,fx,cl,aoe:fx==='aoe',pt:fx==='party',dr:fx==='draw'?2:0,bn:fx==='burn'?4:0,wk:fx==='weak'?2:0});
 // クラス|HP|カード(名,コスト,ダメージ,防御,回復,効果) 効果: aoe全体 burn燃焼 weak弱体 draw2枚引く party味方全員
@@ -60,18 +62,24 @@ const stats=p=>{const s={dmg:0,hp:0,blk:0,draw:0,en:0,heal:0,gold:0,bossd:0,ultp
 const refresh=p=>{const m=p.base+p.hpb+stats(p).hp;if(m>p.mhp)p.hp+=m-p.mhp;p.mhp=m;p.hp=Math.min(p.hp,m)};
 
 // 敵48種(系統8×格6) + 竜の眷属
-const FAM=[['ゴブリン',18,4],['スケルトン',22,5],['オーク',32,6],['ウルフ',20,6],['トロル',42,7],['ゴースト',18,6],['大蜘蛛',24,5],['ワイト',28,7]],PRE=['','荒くれ','狂える','古の','呪われた','闇の'];
+const FAM=[['ゴブリン',18,4],['スケルトン',22,5],['オーク',32,6],['ウルフ',20,6],['トロル',42,7],['ゴースト',18,6],['大蜘蛛',24,5],['ワイト',28,7],['雪男',38,7],['ハーピー',22,6],['氷の精霊',20,7],['サソリ',24,6],['ミイラ',30,7],['砂蟲',44,8],['リザードマン',32,7],['沼ゾンビ',34,6],['毒蛙',22,6],['沼の魔女',24,9],['ガーゴイル',40,8],['ドラゴニュート',46,10]],PRE=['','荒くれ','狂える','古の','呪われた','闇の'];
 const BP={1:['atk','summon','all','charge'],2:['heavy','all','summon','charge','weak'],3:['all','charge','doom','heavy','all','heavy']};
 const intent=e=>{const k=e.pat[e.ti%e.pat.length];const o={k,v:Math.round(e.d*({atk:1,heavy:1.8,all:.7,weak:.6,guard:0,charge:2.2,summon:0,doom:2.6}[k]))};if(k==='charge')o.need=12+14*e.pn;return o};
-const RF=[[0,1,3,6],[2,3,4,6],[4,5,7,2]];
-function mkEnemy(s,x=0){const f=pick(RF[chOf(s)]);s=Math.round(s*.65);const t=Math.min(5,Math.floor(s*.6)+R(2)+x),F=FAM[f],hp=Math.round((F[1]*(1+t*.3)+s*3)*(x?1.5:1));
-  const e={n:PRE[t]+F[0],hp,mhp:hp,d:Math.round(F[2]*(1+t*.2)+s*.5),pat:f===6?['atk','weak','atk','heavy']:f===5?['atk','all','atk','heavy']:['atk','atk','heavy','guard'],ti:R(2),burn:0,weak:0,pn:1};e.intent=intent(e);return e}
-const GD=[['森の主 ウルサリオン',90,8,['atk','heavy','weak','guard']],['氷牙の魔狼王 ヴァルガ',150,11,['atk','all','heavy','weak','guard']]];
+const RF=[[0,1,3,6],[2,4,8,9,10],[11,12,13,5,7],[14,15,16,17,6],[18,19,4,7,2]];
+const PT={6:['atk','weak','atk','heavy'],5:['atk','all','atk','heavy'],9:['atk','heavy','all'],10:['atk','all','weak','heavy'],11:['weak','atk','heavy'],16:['weak','atk','atk','heavy'],17:['weak','all','atk','heavy'],19:['heavy','atk','all','heavy']};
+function mkEnemy(s,x=0){const f=pick(RF[chOf(s)]);s=Math.round(s*.4);const t=Math.min(5,Math.floor(s*.6)+R(2)+x),F=FAM[f],hp=Math.round((F[1]*(1+t*.3)+s*3)*(x?1.5:1));
+  const e={n:PRE[t]+F[0],hp,mhp:hp,d:Math.round(F[2]*(1+t*.2)+s*.5),pat:PT[f]||['atk','atk','heavy','guard'],ti:R(2),burn:0,weak:0,pn:1};e.intent=intent(e);return e}
+const GD=[['森の主 ウルサリオン',90,8,['atk','heavy','weak','guard']],['氷牙の魔狼王 ヴァルガ',130,10,['atk','all','heavy','weak','guard']],['砂漠の王 サンドロス',160,10,['atk','charge','heavy','weak','guard']],['沼の九頭竜 ヒュドラ',200,11,['atk','all','summon','heavy','weak','all']]];
 function mkGuard(i){const[n,hp,d,pat]=GD[i];const e={n:'👑'+n,hp,mhp:hp,d,pat,ti:0,burn:0,weak:0,pn:1};e.intent=intent(e);return e}
-function mkWhelp(n,d){const e={n:'竜の眷属',hp:12+6*n,mhp:12+6*n,d:Math.round(d*.5),pat:['atk','atk','heavy'],ti:0,burn:0,weak:0,pn:n};e.intent=intent(e);return e}
+function mkWhelp(n,d,nm='竜の眷属'){const e={n:nm,hp:12+6*n,mhp:12+6*n,d:Math.round(d*.5),pat:['atk','atk','heavy'],ti:0,burn:0,weak:0,pn:n};e.intent=intent(e);return e}
 
 // イベント: 場所25×状況28=700種 + 分岐ストーリー8編
 const PL=['霧深い森','朽ちた砦','凍てつく山道','静かな湖畔','古の街道','荒れ果てた村','暗い洞窟','燃えた橋','霧の沼地','忘れられた墓所','竜の丘','黒き森','星降る平原','廃坑','古代の神殿','雪原','砂嵐の谷','海辺の断崖','呪われた城下','エルフの遺跡','ドワーフの坑道','月夜の泉','嵐の岬','黄金の草原','影の峡谷'];
+const PLR=[['霧深い森','朽ちた砦','静かな湖畔','古の街道','荒れ果てた村','黒き森','月夜の泉','エルフの遺跡'],
+['凍てつく山道','雪原','氷の洞窟','吹雪の峠','ドワーフの坑道','廃坑','雪に埋もれた神殿','氷河の裂け目'],
+['砂嵐の谷','燃える砂丘','古代の王墓','オアシスの跡','崩れた神殿','岩の迷宮','黄金の遺跡','熱砂の街道'],
+['毒霧の沼','朽ちた桟橋','忘れられた墓所','呪われた城下','腐った森','魔女の庭','底なしの泥地','沈んだ聖堂'],
+['竜の丘','焼けた谷','灰の平原','嵐の岬','溶岩の裂け目','竜骨の荒野','黒き城門','影の峡谷']];
 const TP=[
 ['宝箱を見つけた',[['開ける','gamble'],['鍵を探す','gold',12],['無視する','pass']]],
 ['傷ついた旅人が助けを求めている',[['手当てする','sp'],['持ち物を奪う','gold',8],['立ち去る','pass']]],
@@ -118,13 +126,27 @@ sp1:{t:'星降る泉に精霊が現れた。「願いを一つだけ叶えよう
 sp2:{t:'「何を望む?」',o:[['力を','up',0,'カードが星の光を帯びた。'],['命を','maxhp',10,'生命の輝きが身体を満たした。'],['富を','gold',60,'泉から金貨が溢れ出した。']]},
 dw1:{t:'ドワーフの古い工房。炉はまだ温かい。',o:[['炉に火を入れる','go',0,'炉が唸り、古の技が蘇った。','dw2'],['素通りする','pass']]},
 dw2:{t:'金床の上に未完成の武具が置かれている。',o:[['武器を仕上げる','named',0,'完成した武具は、確かな重みを持っていた。'],['防具を鍛える','up',0,'カードが鍛えられ、より鋭くなった。'],['道具を売る','gold',50,'ドワーフ商人が高値で買い取った。']]}};
+Object.assign(ST,{
+mr1:{t:'砂丘の向こうに、水と宝を積んだ隊商が見える。だが影が不自然に揺らいでいる…',o:[['近づく','go',0,'隊商は蜃気楼ではなく、盗賊団の罠だった。','mr2'],['避けて進む','pass']]},
+mr2:{t:'盗賊団の頭が笑う。「通行料を置いていきな」',o:[['戦う','fight'],['水を分けてもらう','heal',40,'頭は肩をすくめ、水袋を投げてよこした。'],['隙を見て宝を狙う','gamble']]},
+kg1:{t:'砂に埋もれた石の入口が、風で顔を出している。古い王墓のようだ。',o:[['入口を掘る','go',0,'砂の下に、石の階段が現れた。','kg2'],['立ち去る','pass']]},
+kg2:{t:'暗い玄室の奥に、王の副葬品が並んでいる。',o:[['宝を持ち出す','named',0,'呪いの気配はなかった。王は許してくれたらしい。'],['壁画を読む','sp',0,'砂漠の王サンドロスの伝承を知った。']]},
+sw1:{t:'沼の中から巨大な蛙が語りかけてくる。「口づけを…してくれぬか…」',o:[['口づけする','go',0,'蛙は光に包まれ、気品ある王子の姿になった。','sw2'],['槍で突く','fight'],['無視する','pass']]},
+sw2:{t:'「礼に、願いを一つ叶えよう」',o:[['力を','up',0,'カードが光を帯びた。'],['宝を','named',0,'王子は隠し財宝を差し出した。'],['癒しを','heal',50,'王子の魔法が傷を癒した。']]},
+sh1:{t:'毒霧の向こうに小屋の灯りがある。薬師が住んでいるらしい。',o:[['訪ねる','go',0,'老いた薬師は毒を恐れず、愉快そうに笑っていた。','sh2'],['通り過ぎる','pass']]},
+sh2:{t:'「毒を飲めば強くなる。死ななければな」',o:[['毒薬を飲む','hurtsp',12,'苦しみの果てに、知識が身についた。'],['解毒薬をもらう','heal',45,'薬師の腕は確かだった。'],['断る','pass']]},
+ic1:{t:'吹雪の中、凍えた旅人が倒れている。',o:[['焚き火で温める','go',0,'旅人は息を吹き返し、礼を述べた。','ic2'],['防寒具を剥ぐ','item',0,'旅人は力なく目を閉じた…']]},
+ic2:{t:'旅人は元・竜狩りだと語る。「あの竜は賢い…油断するな」',o:[['弱点を聞く','sp',0,'竜の鱗には継ぎ目があるという。'],['武具を受け取る','named',0,'「俺にはもう要らん」と旅人は微笑んだ。']]},
+vl1:{t:'谷の岩陰に、脈打つ巨大な卵がある。',o:[['卵を調べる','go',0,'殻から温かい魔力が溢れている。','vl2'],['通り過ぎる','pass']]},
+vl2:{t:'卵の魔力が、あなたを誘っている。',o:[['魔力を吸収する','maxhp',12,'竜の魔力が体に満ちた。'],['卵を砕く','fight'],['殻の欠片を持ち帰る','named',0,'殻は鉄より硬かった。']]}});
+[['mr1',2],['kg1',2],['sw1',3],['sh1',3],['ic1',1],['vl1',4]].forEach(([k,c])=>ST[k].ch=c);
 const SS=Object.keys(ST).filter(k=>k.endsWith('1'));
 const evScene=n=>({t:'event',res:null,nx:null,ev:{text:n.t,opts:n.o.map(([l,k,v,tx,nx])=>({l,k,v,tx,nx}))}});
 
 const newRoom=code=>({code,phase:'lobby',host:null,pl:{},order:[]});
 function addPlayer(r,name,key){const id=Math.random().toString(36).slice(2,8),tok=Math.random().toString(36).slice(2)+Date.now().toString(36);
   const p={id,name,key,tok,cls:null,scene:null,ws:null,hp:0,mhp:0,gold:0,step:0,items:[],deck:[],seen:[]};r.pl[id]=p;r.order.push(id);if(!r.host)r.host=id;return p}
-function init(p){Object.assign(p,{base:CLS[p.cls].hp,hpb:0,items:[],gold:0,step:0,seen:[],deck:[...CLS[p.cls].ids.slice(0,4),'k0','k0','k0','k1','k1','k1']});p.mhp=p.base+stats(p).hp;p.hp=p.mhp}
+function init(p){Object.assign(p,{base:CLS[p.cls].hp,hpb:0,items:[],gold:0,step:0,shown:-1,seen:[],deck:[...CLS[p.cls].ids.slice(0,4),'k0','k0','k0','k1','k1','k1']});p.mhp=p.base+stats(p).hp;p.hp=p.mhp}
 
 const NW={battle:32,event:28,rest:10,shop:10,treasure:8,elite:12};
 function nodes(p){const s=p.step;if(s>=STEPS-1)return[{k:'rest'},{k:'shop'}];
@@ -133,7 +155,8 @@ function nodes(p){const s=p.step;if(s>=STEPS-1)return[{k:'rest'},{k:'shop'}];
   if(!out.some(o=>o.k==='battle'||o.k==='event'))out[0]={k:'battle'};return out}
 function next(r,p){
   if(p.step>=STEPS){if(!p.scene||p.scene.t!=='gather')p.hp=Math.min(p.mhp,p.hp+Math.round(p.mhp*.3));p.scene={t:'gather'};return}
-  if(p.step===4||p.step===9)return startBattle(r,[p],false,'guard');
+  if(p.step%5===0&&p.shown!==p.step){p.shown=p.step;p.scene={t:'chapter',ch:chOf(p.step)};return}
+  if(p.step%5===4)return startBattle(r,[p],false,'guard');
   p.scene={t:'map',opts:nodes(p)}}
 function enter(r,p,i){const sc=p.scene;if(!sc||sc.t!=='map')return;const o=sc.opts[i];if(!o)return;const k=o.k;
   if(k==='battle')return startBattle(r,[p],false);
@@ -141,8 +164,8 @@ function enter(r,p,i){const sc=p.scene;if(!sc||sc.t!=='map')return;const o=sc.op
   if(k==='shop'){p.scene=mkShop(p);return}
   if(k==='rest'){p.scene=evScene({t:'焚き火の炎が揺れている。しばし体を休められそうだ。',o:[['眠って体力を回復する','healp',40],['武具を手入れしてカードを強化する','up',0],['瞑想して不要なカードを外す','remove',0]]});return}
   if(k==='treasure'){p.scene=evScene({t:'道端に古びた宝箱が置かれている。罠の気配はない。',o:[['宝を取り出す','item',0],['金貨を探す','gold',30]]});return}
-  if(R(100)<16){const l=SS.filter(s=>!p.seen.includes(s));if(l.length){const s=pick(l);p.seen.push(s);p.scene=evScene(ST[s]);return}}
-  const ix=R(TP.length*25),T=TP[ix/25|0];p.scene=evScene({t:PL[ix%25]+'にて、'+T[0]+'。',o:T[1]})}
+  if(R(100)<16){const l=SS.filter(s=>!p.seen.includes(s)&&(ST[s].ch===undefined||ST[s].ch===chOf(p.step)));if(l.length){const s=pick(l);p.seen.push(s);p.scene=evScene(ST[s]);return}}
+  const T=pick(TP);p.scene=evScene({t:pick(PLR[chOf(p.step)])+'にて、'+T[0]+'。',o:T[1]})}
 function mkShop(p){const g=[];for(let i=0;i<2;i++){const id=R(300);g.push({k:'item',id,it:item(id),price:40+R(30)})}
   const cl=CLS[p.cls].ids.concat(K);for(let i=0;i<3;i++){const c=pick(cl)+(R(100)<30?'+':'');g.push({k:'card',id:c,price:c.endsWith('+')?55:35})}
   g.push({k:'heal',price:20},{k:'remove',price:35},{k:'up',price:45});return{t:'shop',goods:g,msg:''}}
@@ -160,7 +183,7 @@ function upgrade(p){const l=p.deck.map((c,i)=>i).filter(i=>p.deck[i]!=='x0'&&CAR
 function removeCard(p){let i=p.deck.indexOf('x0');if(i<0)i=p.deck.findIndex(c=>c==='k0'||c==='k1');if(i<0||p.deck.length<=6)return'手放せるカードはなかった。';const o=CARDS[p.deck[i]].n;p.deck.splice(i,1);return`「${o}」をデッキから外した。`}
 function choose(r,p,i){
   const sc=p.scene;if(!sc||sc.t!=='event'||sc.res)return;const o=sc.ev.opts[i];if(!o)return;
-  const s=Math.round(p.step*.65);let k=o.k,v=o.v||0,res='';
+  const s=Math.round(p.step*.4);let k=o.k,v=o.v||0,res='';
   if(k==='gamble'){const q=R(100);k=q<55?'item':q<70?'curse':'hurt';v=8+s}
   if(k==='fight'){startBattle(r,[p],false);return}
   if(k==='go')res='';
@@ -188,7 +211,7 @@ const over=b=>{const bo=b.en.find(e=>e.boss);return bo?bo.hp<=0:!b.en.some(e=>e.
 function startBattle(r,ps,boss,kind){
   const b={boss,kind,en:[],parts:{},ids:ps.map(p=>p.id),log:[],dt:0},n=ps.length;
   if(boss){const e={n:'賢き邪竜 ヴァルドラクス',hp:180+100*n,mhp:180+100*n,d:9+2*n,ph:1,pn:n,pat:BP[1],ti:0,burn:0,weak:0,boss:1};e.intent=intent(e);b.en=[e];L(b,'竜「我が眠りを妨げる者は誰だ」')}
-  else if(kind==='guard'){b.en.push(mkGuard(ps[0].step===4?0:1));L(b,'守護者が立ちはだかった!')}
+  else if(kind==='guard'){b.en.push(mkGuard((ps[0].step+1)/5-1));L(b,'守護者が立ちはだかった!')}
   else if(kind==='elite'){const e=mkEnemy(ps[0].step,2);e.n='👹'+e.n;b.en.push(e)}
   else{const c=ps[0].step>=4&&R(2)?2:1;for(let i=0;i<c;i++)b.en.push(mkEnemy(ps[0].step))}
   ps.forEach(p=>{const st=stats(p);b.parts[p.id]={draw:shuf(p.deck),hand:[],disc:[],en:3+st.en,blk:st.blk,ended:false,weak:0,used:0,linked:0};drawN(b,p.id,5+st.draw);p.scene={t:'battle',b}})}
@@ -218,7 +241,7 @@ function enemyTurn(r,b){combo(r,b);
   b.en.filter(e=>e.hp>0).forEach(e=>{
     const it=e.intent,m=(e.weak>0?.5:1)*(e.boss&&e.ph===3?1.25:1);
     const hit=(p,v)=>{const pt=b.parts[p.id];let x=Math.round(v*m);const a=Math.min(pt.blk,x);pt.blk-=a;x-=a;p.hp=Math.max(0,p.hp-x);return x};
-    if(it.k==='summon'){let c=0;while(b.en.filter(x=>x.hp>0&&!x.boss).length<2&&c<2){b.en.push(mkWhelp(b.ids.length,e.d));c++}L(b,c?'竜「来い、我が眷属よ」':'竜は眷属を鼓舞した')}
+    if(it.k==='summon'){let c=0;while(b.en.filter(x=>x.hp>0&&!x.boss).length<2&&c<2){b.en.push(mkWhelp(b.ids.length,e.d,e.boss?'竜の眷属':'毒蛇の首'));c++}L(b,c?'竜「来い、我が眷属よ」':'竜は眷属を鼓舞した')}
     else if(it.k==='charge'){if(b.dt>=it.need){L(b,'⚡ 溜めを阻止!竜がひるんだ');e.weak=2}else{L(b,'🔥 竜の業火が全員を焼く!');alive().forEach(p=>hit(p,it.v))}}
     else if(it.k==='doom'){const q=Math.min(3,alive().length);if((b.combo||0)>=q){L(b,'✨ 連携の光が終焉の詠唱を打ち破った!');e.weak=2}else{L(b,'💀 終焉の詠唱が全員を襲う!');alive().forEach(p=>hit(p,it.v))}}
     else if(it.k==='all'){alive().forEach(p=>hit(p,it.v));L(b,`${e.n}の範囲攻撃!`)}
@@ -232,7 +255,7 @@ function enemyTurn(r,b){combo(r,b);
   b.ids.forEach(i=>{const p=r.pl[i],pt=b.parts[i],st=stats(p);pt.disc.push(...pt.hand);pt.hand=[];pt.en=3+st.en;pt.blk=st.blk;pt.ended=p.hp<=0;pt.linked=0;if(p.hp>0)drawN(b,i,5+st.draw)})}
 function win(r,b){b.ids.forEach(id=>{const p=r.pl[id],st=stats(p);
   if(b.boss){p.scene={t:'over',gold:p.gold,items:p.items.length,deck:p.deck.length};prof(p).sp+=5;prof(p).wins++;r.phase='over';return}
-  const k=b.kind,g=Math.round((8+p.step*3+R(8))*(1+st.gold/100)*(k?2:1));p.gold+=g;p.hp=Math.min(p.mhp,p.hp+st.heal*2+3+(k==='guard'?Math.round(p.mhp*.4):0));prof(p).sp+=k?2:1;
+  const k=b.kind,g=Math.round((8+p.step*2+R(8))*(1+st.gold/100)*(k?2:1));p.gold+=g;p.hp=Math.min(p.mhp,p.hp+st.heal*2+3+(k==='guard'?Math.round(p.mhp*.4):0));prof(p).sp+=k?2:1;
   const note=k==='guard'||(k==='elite'&&R(100)<45)?giveItem(p,1):'';
   p.scene={t:'reward',g,note,cards:shuf([...CLS[p.cls].ids,...K]).slice(0,3).map(c=>R(100)<(k?40:15)?c+'+':c)}})}
 function lose(r,b){b.ids.forEach(id=>{const p=r.pl[id];
@@ -255,7 +278,7 @@ function handle(r,id,m){
     case'ult':ult(r,p,m.g);break;
     case'link':link(r,p);break;
     case'end':endTurn(r,p);break;
-    case'next':{const sc=p.scene;if(sc&&sc.t==='event'&&sc.res){if(sc.nx)p.scene=evScene(ST[sc.nx]);else{p.step++;next(r,p)}}else if(sc&&sc.t==='defeat')next(r,p);break}
+    case'next':{const sc=p.scene;if(sc&&sc.t==='event'&&sc.res){if(sc.nx)p.scene=evScene(ST[sc.nx]);else{p.step++;next(r,p)}}else if(sc&&(sc.t==='defeat'||sc.t==='chapter'))next(r,p);break}
     case'reward':if(p.scene&&p.scene.t==='reward'){const c=p.scene.cards[m.i];if(c)p.deck.push(c);p.step++;next(r,p)}break;
     case'raid':if(r.host===id)raid(r);break;
     case'restart':if(r.host===id&&r.phase==='over'&&r.order.every(i=>r.pl[i].cls!=null)){r.phase='run';r.runs=(r.runs||0)+1;r.order.forEach(i=>{init(r.pl[i]);next(r,r.pl[i])})}break;
@@ -273,5 +296,5 @@ function view(r,id){
     me:{id,name:p.name,ch:chOf(p.step),cls:p.cls,hp:p.hp,mhp:p.mhp,gold:p.gold,step:p.step,deck:p.deck,items:(p.items||[]).map(item),st:p.cls==null?null:stats(p)},
     party:r.order.map(i=>{const q=r.pl[i];return{n:q.name,cls:q.cls,hp:q.hp,mhp:q.mhp,step:q.step,on:!!q.ws,sc:q.scene&&q.scene.t,me:i===id}}),
     sc:s,pr:{sp:pr.sp,skills:pr.skills,wins:pr.wins}}}
-const INIT={cards:CARDS,cls:CLS,tree:TREE,lb:LB,ult:ULT,steps:STEPS,ch:CH};
+const INIT={cards:CARDS,cls:CLS,tree:TREE,lb:LB,ult:ULT,steps:STEPS,ch:CH,cht:CHT,gd:GN};
 module.exports={S,newRoom,addPlayer,handle,view,offline,prof,restore,INIT};
